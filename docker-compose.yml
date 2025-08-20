@@ -65,6 +65,8 @@ services:
       context: sunroof-ui
     depends_on:
       - api
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
     ports:
-      - '8081:80'
+      - '80:80'
 
