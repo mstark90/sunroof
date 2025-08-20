@@ -15,6 +15,9 @@ final class Calendar: Model, @unchecked Sendable {
     
     @Children(for: \.$calendar)
     var events: [Event]
+    
+    @Children(for: \.$calendar)
+    var notes: [Note]
 
     init() { }
 

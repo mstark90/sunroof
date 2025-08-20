@@ -29,6 +29,7 @@ public func configure(_ app: Application) async throws {
     ), as: .mysql)
 
     app.migrations.add(CreateEvent())
+    app.migrations.add(AddEventColorsAndNotes())
 
     // register routes
     try routes(app)

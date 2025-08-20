@@ -8,6 +8,8 @@ struct CalendarController: RouteCollection {
         calendars.get(use: self.index)
         calendars.post(use: self.create)
         calendars.group(":calendarID") { calendar in
+            calendar.get("notes", use: self.getNotesForDate)
+            calendar.post("notes", use: self.addNotes)
             calendar.get("events", use: self.getEventsForCalendar)
             calendar.post("events", use: self.addEventToCalendar)
             calendar.group("events/:eventID") { calendarEvent in
@@ -76,6 +78,42 @@ struct CalendarController: RouteCollection {
         try await event.delete(on: req.db)
         
         return .noContent
+    }
+    
+    @Sendable
+    func getNotesForDate(req: Request) async throws -> NoteDTO {
+        guard let calendar = try await Calendar.find(req.parameters.get("calendarID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let dateFormatter = Utilities.getDateFormatter()
+        
+        var date = Date.now;
+        
+        do {
+            date = try dateFormatter.date(from: req.query.get(String.self, at: "date")) ?? .now
+        } catch {
+            
+        }
+        
+        guard let note = try await calendar.$notes.query(on: req.db).filter(\.$day == date).first() else {
+            throw Abort(.notFound)
+        }
+        
+        return note.toDTO()
+    }
+    
+    @Sendable
+    func addNotes(req: Request) async throws -> NoteDTO {
+        guard let calendar = try await Calendar.find(req.parameters.get("calendarID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let notes = try req.content.decode(NoteDTO.self).toModel(calendar: calendar)
+        
+        try await notes.save(on: req.db)
+        
+        return notes.toDTO()
     }
 
     @Sendable

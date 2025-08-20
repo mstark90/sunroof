@@ -14,6 +14,12 @@ struct EventDTO: Content {
     
     var allDay: Bool?
     
+    var backgroundColor: String?
+    
+    var textColor: String?
+    
+    var description: String?
+    
     func toModel(calendar: Calendar) -> Event {
         let model = Event()
         
@@ -21,9 +27,7 @@ struct EventDTO: Content {
         
         model.$calendar.id = calendar.id!
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX") // set locale to reliable US_POSIX
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        let dateFormatter = Utilities.getDateTimeFormatter()
         
         if let title = self.title {
             model.title = title
@@ -45,6 +49,22 @@ struct EventDTO: Content {
             model.allDay = allDay
         } else {
             model.allDay = false
+        }
+        
+        if let backgroundColor = self.backgroundColor {
+            model.backgroundColor = backgroundColor
+        } else {
+            model.backgroundColor = "#008000"
+        }
+        
+        if let textColor = self.textColor {
+            model.textColor = textColor
+        } else {
+            model.textColor = "#ffffff"
+        }
+        
+        if let description = self.description {
+            model.description = description
         }
         
         return model
