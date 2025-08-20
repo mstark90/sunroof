@@ -23,6 +23,8 @@ function App() {
   const [calendars, setCalendars] = useState<SunroofCalendar[]>([]);
   const [calendar, setCalendar] = useState<SunroofCalendar | undefined>(undefined);
 
+  const [kioskMode, setKioskMode] = useState(false);
+
   const loadEvent = useCallback((event: SunroofEvent) => {
     if(!eventCalendar) {
       return;
@@ -101,6 +103,12 @@ function App() {
   };
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+
+    setKioskMode(!!searchParams.get("kiosk"));
+  }, []);
+
+  useEffect(() => {
     setEventCalendarRef(document.getElementById(eventCalendarId) as HTMLDivElement);
   }, [eventCalendarId]);
 
@@ -174,7 +182,7 @@ function App() {
     <>
       <div className='container-fluid main-container'>
         <div className='row'>
-          <div className={calendar ? 'col-3 gapped' : 'col-2'}>
+          <div className={calendar ? 'col-3 gapped' : 'col-2'} hidden={kioskMode}>
             <button className='btn btn-primary' onClick={() => setAddingCalendar(true)}>
               Add Calendar
             </button>
