@@ -26,7 +26,7 @@ function App() {
   const [kioskMode, setKioskMode] = useState(false);
 
   const loadEvent = useCallback((event: SunroofEvent) => {
-    if(!eventCalendar) {
+    if (!eventCalendar) {
       return;
     }
 
@@ -71,7 +71,7 @@ function App() {
   }, []);
 
   const onCreateEvent = useCallback((event: SunroofEvent, context: AddEventCallbackContext) => {
-    if(!calendar) {
+    if (!calendar) {
       return;
     }
 
@@ -142,12 +142,37 @@ function App() {
   }, [eventCalendarRef]);
 
   React.useEffect(() => {
-    getSunroofCalendars()
-      .then((response) => {
-        setCalendars(response.data);
-      });
 
-  }, [eventCalendar]);
+    const getCalendars = () => {
+      getSunroofCalendars()
+        .then((response) => {
+          setCalendars(response.data);
+
+          if(response.data.length === 0) {
+            return;
+          }
+
+          const firstCalendar = response.data[0];
+
+          setCalendar(oldCalendar => {
+            if(!kioskMode || !firstCalendar || !oldCalendar || oldCalendar.id === firstCalendar.id) {
+              return oldCalendar;
+            }
+
+            return firstCalendar;
+          });
+        });
+    }
+
+    const intervalId = setInterval(getCalendars, 60 * 1000);
+
+    getCalendars();
+
+    return () => {
+      clearInterval(intervalId);
+    };
+
+  }, [eventCalendar, kioskMode]);
 
   React.useEffect(() => {
     if (!eventCalendar) {
