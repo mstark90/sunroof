@@ -1,0 +1,19 @@
+.main-container {
+  width: 100%;
+  height: 100%;
+  
+  padding: 1rem;
+
+  display: flex;
+
+  flex-direction: column;
+}
+
+.main-container .event-calendar {
+  box-sizing: border-box;
+}
+
+.gapped {
+  display: flex;
+  gap: 1rem;
+}
