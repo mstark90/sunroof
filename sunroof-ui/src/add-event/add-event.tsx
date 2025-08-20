@@ -29,8 +29,8 @@ export function AddEventDialog({
   const [modal, setModal] = useState<Modal | undefined>(undefined);
 
   const [title, setTitle] = useState<string | undefined>(undefined);
-  const [start, setStart] = useState<Moment>(moment());
-  const [end, setEnd] = useState<Moment>(moment());
+  const [start, setStart] = useState<Moment|null>(moment());
+  const [end, setEnd] = useState<Moment|null>(moment());
   const [allDay, setAllDay] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState<string | undefined>(undefined);
@@ -67,8 +67,8 @@ export function AddEventDialog({
   const beginAdd = useCallback(() => {
     const request: SunroofEvent = {
       title,
-      start: start.utc().toISOString(),
-      end: end.utc().toISOString(),
+      start: start?.utc().toISOString(),
+      end: end?.utc().toISOString(),
       allDay
     };
 

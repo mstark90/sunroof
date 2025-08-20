@@ -80,7 +80,7 @@ export function AddCalendarDialog({
   const handleClose = useCallback(() => {
     modal?.hide();
     onClose();
-  }, [modal]);
+  }, [modal, onClose]);
 
   return (
     <div id={id} className="modal">
