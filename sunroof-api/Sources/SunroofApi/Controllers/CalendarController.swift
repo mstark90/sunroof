@@ -8,13 +8,12 @@ struct CalendarController: RouteCollection {
         calendars.get(use: self.index)
         calendars.post(use: self.create)
         calendars.group(":calendarID") { calendar in
-            calendar.get("notes", use: self.getNotesForDate)
-            calendar.post("notes", use: self.addNotes)
-            calendar.get("events", use: self.getEventsForCalendar)
-            calendar.post("events", use: self.addEventToCalendar)
-            calendar.group("events/:eventID") { calendarEvent in
-                calendarEvent.delete(use: self.deleteEventFromCalendar)
+            calendar.group("events") { events in
+                events.get(use: self.getEventsForCalendar)
+                events.post(use: self.addEventToCalendar)
+                events.delete(":eventID", use: self.deleteEventFromCalendar)
             }
+            
             calendar.delete(use: self.delete)
         }
     }
@@ -39,7 +38,28 @@ struct CalendarController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        return try await calendar.$events.get(on: req.db).map { $0.toDTO() }
+        let startDate = Utilities.getDateFormatter().date(from: req.query[String.self, at: "start"] ?? "")
+        let endDate = Utilities.getDateFormatter().date(from: req.query[String.self, at: "end"] ?? "")
+        
+        if startDate != nil || endDate != nil {
+            var retVal = calendar.$events
+                .query(on: req.db)
+            
+            if startDate != nil {
+                retVal = retVal.filter(\.$start >= startDate!)
+            }
+            
+            if endDate != nil {
+                retVal = retVal.filter(\.$end <= endDate!)
+            }
+            
+            return try await retVal.all()
+                .map { $0.toDTO() }
+        }
+        
+        return try await calendar.$events
+            .get(on: req.db)
+            .map { $0.toDTO() }
     }
     
     @Sendable
