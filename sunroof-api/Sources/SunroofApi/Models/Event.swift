@@ -26,12 +26,6 @@ final class Event: Model, @unchecked Sendable {
     @Field(key: "all_day")
     var allDay: Bool
     
-    @Field(key: "background_color")
-    var backgroundColor: String
-    
-    @Field(key: "text_color")
-    var textColor: String
-    
     @Field(key: "description")
     var description: String?
 
@@ -46,8 +40,7 @@ final class Event: Model, @unchecked Sendable {
         self.start = start ?? .now
         self.end = end ?? .now
         self.allDay = allDay ?? false
-        self.textColor = textColor ?? "#ffffff"
-        self.backgroundColor = backgroundColor ?? "#008000";
+        
         self.description = description
     }
     
@@ -60,7 +53,6 @@ final class Event: Model, @unchecked Sendable {
             start: dateFormatter.string(for: self.$start.value),
             end: dateFormatter.string(for: self.$end.value),
             allDay: self.$allDay.value,
-            backgroundColor: self.$backgroundColor.value, textColor: self.$textColor.value,
             description: self.$description.value ?? nil
         )
     }

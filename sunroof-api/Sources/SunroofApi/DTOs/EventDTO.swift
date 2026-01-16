@@ -14,10 +14,6 @@ struct EventDTO: Content {
     
     var allDay: Bool?
     
-    var backgroundColor: String?
-    
-    var textColor: String?
-    
     var description: String?
     
     func toModel(calendar: Calendar) -> Event {
@@ -49,18 +45,6 @@ struct EventDTO: Content {
             model.allDay = allDay
         } else {
             model.allDay = false
-        }
-        
-        if let backgroundColor = self.backgroundColor {
-            model.backgroundColor = backgroundColor
-        } else {
-            model.backgroundColor = "#008000"
-        }
-        
-        if let textColor = self.textColor {
-            model.textColor = textColor
-        } else {
-            model.textColor = "#ffffff"
         }
         
         if let description = self.description {

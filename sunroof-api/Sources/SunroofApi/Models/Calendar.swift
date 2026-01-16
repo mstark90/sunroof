@@ -18,18 +18,29 @@ final class Calendar: Model, @unchecked Sendable {
     
     @Children(for: \.$calendar)
     var notes: [Note]
+    
+    @Field(key: "background_color")
+    var backgroundColor: String
+    
+    @Field(key: "text_color")
+    var textColor: String
 
-    init() { }
+    init() {
+    }
 
-    init(id: UUID? = nil, name: String) {
+    init(id: UUID? = nil, name: String, backgroundColor: String?, textColor: String?) {
         self.id = id
         self.name = name
+        self.textColor = textColor ?? "#ffffff"
+        self.backgroundColor = backgroundColor ?? "#008000";
     }
     
     func toDTO() -> CalendarDTO {
         .init(
             id: self.id,
-            name: self.$name.value
+            name: self.$name.value,
+            backgroundColor: self.$backgroundColor.value,
+            textColor: self.$textColor.value
         )
     }
 }

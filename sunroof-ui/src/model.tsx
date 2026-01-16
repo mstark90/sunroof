@@ -2,6 +2,9 @@
 export interface SunroofCalendar {
   id?: string;
   name?: string;
+
+  backgroundColor?: string;
+  textColor?: string;
 }
 
 export interface SunroofEvent {
