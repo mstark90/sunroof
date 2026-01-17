@@ -1,38 +1,38 @@
 import './App.css'
-import React, { useCallback, useEffect, useId, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import moment from 'moment';
 
-import { type Calendar } from '@event-calendar/core';
-// Import CSS if your build tool supports it
-import '@event-calendar/core/index.css';
-import { getSunroofCalendars, getSunroofEvents } from './api';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
+import { getSunroofEvents } from './api';
 import type { SunroofCalendar, SunroofEvent } from './model';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid'
+import bootstrap5Plugin from '@fullcalendar/bootstrap5'
 import { MainSidebar } from './components/main-sidebar';
 
 function App() {
 
-  const eventCalendarId = useId();
-  const [eventCalendar, setEventCalendar] = useState<Calendar | undefined>(undefined);
+  const eventCalendar = useRef<FullCalendar|null>(null);
 
   const [calendars, setCalendars] = useState<SunroofCalendar[]>([]);
-  const [calendar, setCalendar] = useState<SunroofCalendar | undefined>(undefined);
 
   const [kioskMode, setKioskMode] = useState(false);
 
-  const loadEvent = useCallback((event: SunroofEvent) => {
-    if (!eventCalendar) {
+  const loadEvent = useCallback((calendar: SunroofCalendar, event: SunroofEvent) => {
+    if (!eventCalendar.current) {
       return;
     }
 
-    if (eventCalendar.getEventById(event.id!)) {
+    const api = eventCalendar.current.getApi();
+
+    if (api.getEventById(event.id!)) {
       return;
     }
 
     const start = moment(event.start!);
     const end = moment(event.end!);
-    eventCalendar.addEvent({
+    api.addEvent({
       id: event.id!,
       start: start.toDate(),
       end: end.toDate(),
@@ -43,9 +43,8 @@ function App() {
       editable: false,
       startEditable: false,
       durationEditable: false,
-      backgroundColor: "green",
-      textColor: "#fff",
-      color: "#779ECB",
+      color: calendar.backgroundColor,
+      textColor: calendar.textColor,
       classNames: [],
       styles: [],
       extendedProps: {
@@ -54,22 +53,6 @@ function App() {
     });
   }, [eventCalendar]);
 
-  const getButtonClassName = (c: SunroofCalendar) => {
-    if (!calendar || c.id !== calendar.id) {
-      return "btn btn-outline-primary";
-    }
-
-    return "btn btn-primary";
-  };
-
-  const changeCalendar = (calendar: SunroofCalendar) => {
-    eventCalendar?.getEvents().forEach(e => {
-      eventCalendar?.removeEventById(e.id);
-    });
-
-    setCalendar(calendar);
-  };
-
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
 
@@ -77,56 +60,15 @@ function App() {
   }, []);
 
   React.useEffect(() => {
-
-    const getCalendars = () => {
-      getSunroofCalendars()
-        .then((response) => {
-          setCalendars(response.data);
-
-          if (response.data.length === 0) {
-            return;
-          }
-
-          const firstCalendar = response.data[0];
-
-          setCalendar(oldCalendar => {
-            if (!kioskMode || !firstCalendar || !oldCalendar || oldCalendar.id === firstCalendar.id) {
-              return oldCalendar;
-            }
-
-            return firstCalendar;
-          });
-        });
-    }
-
-    const intervalId = setInterval(getCalendars, 60 * 1000);
-
-    getCalendars();
-
-    return () => {
-      clearInterval(intervalId);
-    };
-
-  }, [eventCalendar, kioskMode]);
-
-  React.useEffect(() => {
-    if (!eventCalendar) {
-      return () => {
-
-      };
-    }
-
     const eventLoader = () => {
-      if (!eventCalendar || !calendar) {
-        return;
-      }
-
-      getSunroofEvents(calendar)
-        .then((response) => {
-          response.data.forEach(e => {
-            loadEvent(e);
-          })
-        })
+      calendars.forEach(c => {
+        getSunroofEvents(c)
+          .then((response) => {
+            response.data.forEach(e => {
+              loadEvent(c, e);
+            })
+          });
+      })
     };
 
     const intervalId = setInterval(eventLoader, 60 * 1000);
@@ -136,31 +78,43 @@ function App() {
     return () => {
       clearInterval(intervalId);
     };
-  }, [calendar, eventCalendar, loadEvent]);
+  }, [calendars, loadEvent]);
 
   return (
     <>
-      <div className='row'>
-        <div className='col-lg-4 col-md-12'>
-          <MainSidebar onEventAdded={loadEvent} />
-        </div>
-        <div className='col-lg-4 col-md-12'>
-          <FullCalendar
-            plugins={[dayGridPlugin]}
-            initialView="dayGridMonth"
-          />
-        </div>
-      </div>
-      <div className='container-fluid main-container'>
-        <div className='row'>
-          <div className={calendar ? 'col-3 gapped' : 'col-2'} hidden={kioskMode}>
-            
-          </div>
-          <div className={calendar ? 'col-9' : 'col-10'} hidden={calendars.length === 0}>
-          </div>
-        </div>
-        <div id={eventCalendarId} className='event-calendar'>
+      <nav className="navbar navbar-expand-lg navbar-light bg-light fixed-top" hidden={kioskMode}>
+        <div className='container-fluid'>
+          <a className="navbar-brand" href="#">Sunroof</a>
+          <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span className="navbar-toggler-icon"></span>
+          </button>
 
+          <div className="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul className="navbar-nav mr-auto">
+              <li className="nav-item active">
+                <a className="nav-link" href="/">Home</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+      </nav>
+      <div className='main-container'>
+        <div className='row'>
+          <div className='col-lg-4 col-md-12'>
+            <MainSidebar
+              onEventAdded={loadEvent}
+              onCalendarsLoaded={(calendars) => setCalendars(calendars)}
+            />
+          </div>
+          <div className='col-lg-8 col-md-12'>
+            <FullCalendar
+              ref={eventCalendar}
+              plugins={[dayGridPlugin, bootstrap5Plugin]}
+              themeSystem='bootstrap5'
+              initialView="dayGridMonth"
+            />
+          </div>
         </div>
       </div>
     </>

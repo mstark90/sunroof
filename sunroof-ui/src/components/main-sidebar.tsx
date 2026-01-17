@@ -2,32 +2,73 @@ import { useCallback, useEffect, useId, useState } from "react";
 import type { SunroofCalendar, SunroofEvent } from "../model";
 import { AddCalendarDialog, type AddCalendarCallbackContext } from "../add-calendar/add-calendar";
 import { AddEventDialog, type AddEventCallbackContext } from "../add-event/add-event";
-import { createSunroofCalendar, createSunroofEvent } from "../api";
+import { createSunroofCalendar, createSunroofEvent, getSunroofCalendars } from "../api";
 import type { AxiosResponse } from "axios";
-import type { Calendar } from "@event-calendar/core";
 
 interface MainSidebarProps {
-  onEventAdded?: (event: SunroofEvent) => void;
+  onEventAdded?: (calendar: SunroofCalendar, event: SunroofEvent) => void;
+  onCalendarsLoaded?: (calendars: SunroofCalendar[]) => void;
   onCalendarSelected?: (calendar: SunroofCalendar) => void;
   onCalendarUnselected?: (calendar: SunroofCalendar) => void;
 }
 
-function CalendarControl({
+interface CalendarControlProps {
+  calendar: SunroofCalendar;
+  onSelected?: (selected: boolean) => void;
+}
 
-}) {
-  
+function CalendarControl({
+  calendar,
+  onSelected = () => {}
+}: CalendarControlProps) {
+  const id = useId();
+  return (
+    <div className="form-check">
+      <input
+        className="form-check-input"
+        type="checkbox"
+        checked
+        id={id}
+        onChange={(e) => onSelected(e.target.checked)} 
+      />
+      <label className="form-check-label" htmlFor={id}>
+        {calendar.name}
+      </label>
+    </div>
+  )
 }
 
 export function MainSidebar({
-  onEventAdded,
-  onCalendarSelected,
-  onCalendarUnselected
- }: MainSidebarProps) {
+  onEventAdded = () => {},
+  onCalendarsLoaded = () => {},
+  onCalendarSelected = () => {},
+  onCalendarUnselected = () => {}
+}: MainSidebarProps) {
 
   const [addingCalendar, setAddingCalendar] = useState(false);
   const [addingEvent, setAddingEvent] = useState(false);
 
   const [calendars, setCalendars] = useState<SunroofCalendar[]>([]);
+
+  useEffect(() => {
+  
+      const getCalendars = () => {
+        getSunroofCalendars()
+          .then((response) => {
+            setCalendars(response.data);
+            onCalendarsLoaded(response.data);
+          });
+      }
+  
+      const intervalId = setInterval(getCalendars, 60 * 1000);
+  
+      getCalendars();
+  
+      return () => {
+        clearInterval(intervalId);
+      };
+  
+    }, []);
 
   const onCreateCalendar = useCallback((calendar: SunroofCalendar, context: AddCalendarCallbackContext) => {
     createSunroofCalendar(calendar)
@@ -63,16 +104,27 @@ export function MainSidebar({
         Add Event
       </button>*/
 
-  return (<div className="calendar-container">
+  return (<>
     <div className="container-fluid">
       <button className='btn btn-primary' onClick={() => setAddingCalendar(true)}>
         Add Calendar
       </button>
+      <br />
+      <br />
       {
-        calendars.map
+        calendars.map(c => {
+          const callback = (selected: boolean) => {
+            if(selected) {
+              onCalendarSelected(c);
+            } else {
+              onCalendarUnselected(c);
+            }
+          }
+          return (<CalendarControl calendar={c} onSelected={callback} />)
+        })
       }
     </div>
     <AddCalendarDialog visible={addingCalendar} onCreate={onCreateCalendar} onClose={() => setAddingCalendar(false)} />
-    <AddEventDialog visible={addingEvent} onCreate={() => {}} onClose={() => setAddingEvent(false)} />
-  </div>);
+    <AddEventDialog visible={addingEvent} onCreate={() => { }} onClose={() => setAddingEvent(false)} />
+  </>);
 }

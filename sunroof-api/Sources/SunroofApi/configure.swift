@@ -30,6 +30,7 @@ public func configure(_ app: Application) async throws {
 
     app.migrations.add(CreateEvent())
     app.migrations.add(AddEventColorsAndNotes())
+    app.migrations.add(MoveColorsToCalendar())
 
     // register routes
     try routes(app)
