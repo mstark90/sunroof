@@ -14,9 +14,9 @@ import { MainSidebar } from './components/main-sidebar';
 
 function App() {
 
-  const eventCalendar = useRef<FullCalendar|null>(null);
+  const eventCalendar = useRef<FullCalendar | null>(null);
 
-  const [calendars, setCalendars] = useState<SunroofCalendar[]>([]);
+  const calendars = useRef<SunroofCalendar[]>([]);
 
   const [kioskMode, setKioskMode] = useState(false);
 
@@ -60,17 +60,52 @@ function App() {
     setKioskMode(!!searchParams.get("kiosk"));
   }, []);
 
+  const eventLoader = useCallback(() => {
+    calendars.current.forEach(c => {
+      getSunroofEvents(c)
+        .then((response) => {
+          response.data.forEach(e => {
+            loadEvent(c, e);
+          })
+        });
+    })
+  }, [loadEvent]);
+
+  const unselectCalendar = useCallback((calendar: SunroofCalendar) => {
+    const index = calendars.current.findIndex(c => c.id === calendar.id);
+
+    if(index < 0) {
+      return;
+    }
+
+    calendars.current.splice(index, 1);
+    
+    if (!eventCalendar.current) {
+      return;
+    }
+
+    const api = eventCalendar.current.getApi();
+
+    api.removeAllEvents();
+
+    eventLoader();
+  }, [eventLoader]);
+
+  const selectCalendar = useCallback((calendar: SunroofCalendar) => {
+    calendars.current.push(calendar);
+    
+    if (!eventCalendar.current) {
+      return;
+    }
+
+    const api = eventCalendar.current.getApi();
+
+    api.removeAllEvents();
+
+    eventLoader();
+  }, [eventLoader]);
+
   React.useEffect(() => {
-    const eventLoader = () => {
-      calendars.forEach(c => {
-        getSunroofEvents(c)
-          .then((response) => {
-            response.data.forEach(e => {
-              loadEvent(c, e);
-            })
-          });
-      })
-    };
 
     const intervalId = setInterval(eventLoader, 60 * 1000);
 
@@ -79,7 +114,7 @@ function App() {
     return () => {
       clearInterval(intervalId);
     };
-  }, [calendars, loadEvent]);
+  }, [calendars, eventLoader, loadEvent]);
 
   return (
     <>
@@ -105,7 +140,9 @@ function App() {
           <div className='col-lg-4 col-md-12'>
             <MainSidebar
               onEventAdded={loadEvent}
-              onCalendarsLoaded={(calendars) => setCalendars(calendars)}
+              onCalendarsLoaded={(c) => calendars.current = c}
+              onCalendarSelected={selectCalendar}
+              onCalendarUnselected={unselectCalendar}
             />
           </div>
           <div className='col-lg-8 col-md-12'>

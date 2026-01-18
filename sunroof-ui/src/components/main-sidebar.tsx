@@ -22,14 +22,21 @@ function CalendarControl({
   onSelected = () => { }
 }: CalendarControlProps) {
   const id = useId();
+  const [ selected, setSelected ] = useState(true);
+
+  const checkChanged = (value: boolean) => {
+    setSelected(value);
+    onSelected(value);
+  }
+
   return (
     <div className="form-check">
       <input
         className="form-check-input"
         type="checkbox"
-        checked
+        checked={selected}
         id={id}
-        onChange={(e) => onSelected(e.target.checked)}
+        onChange={(e) => checkChanged(e.target.checked)}
       />
       <label className="form-check-label" htmlFor={id}>
         {calendar.name}
@@ -98,6 +105,9 @@ export function MainSidebar({
       </div>
       <br />
       <br />
+      <h2>
+        Calendars
+      </h2>
       {
         calendars.map(c => {
           const callback = (selected: boolean) => {
