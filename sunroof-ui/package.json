@@ -16,6 +16,7 @@
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/react": "^6.1.20",
+    "@fullcalendar/timegrid": "^6.1.20",
     "@mui/material": "^7.3.1",
     "@mui/x-date-pickers": "^8.10.0",
     "axios": "^1.11.0",

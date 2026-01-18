@@ -7,8 +7,9 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { getSunroofEvents } from './api';
 import type { SunroofCalendar, SunroofEvent } from './model';
 import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid'
-import bootstrap5Plugin from '@fullcalendar/bootstrap5'
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 import { MainSidebar } from './components/main-sidebar';
 
 function App() {
@@ -110,9 +111,14 @@ function App() {
           <div className='col-lg-8 col-md-12'>
             <FullCalendar
               ref={eventCalendar}
-              plugins={[dayGridPlugin, bootstrap5Plugin]}
+              plugins={[dayGridPlugin, bootstrap5Plugin, timeGridPlugin]}
               themeSystem='bootstrap5'
               initialView="dayGridMonth"
+              headerToolbar={{
+                left: 'prev,next',
+                center: 'title',
+                right: 'dayGridMonth,timeGridDay' // user can switch between the two
+              }}
             />
           </div>
         </div>
