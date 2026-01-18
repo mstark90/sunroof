@@ -104,10 +104,10 @@ export function MainSidebar({
         </div>
       </div>
       <br />
-      <br />
       <h2>
         Calendars
       </h2>
+      <br />
       {
         calendars.map(c => {
           const callback = (selected: boolean) => {
