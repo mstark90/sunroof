@@ -1,9 +1,10 @@
 import { Modal } from "bootstrap";
 import { useCallback, useEffect, useId, useState } from "react";
-import type { SunroofEvent } from "../model";
+import type { SunroofCalendar, SunroofEvent } from "../model";
 import { DateTimePicker } from "@mui/x-date-pickers";
 import type { Moment } from "moment";
 import moment from "moment";
+import { createSunroofEvent } from "../api";
 
 export interface AddEventCallbackContext {
   success: (message: string) => void;
@@ -11,12 +12,14 @@ export interface AddEventCallbackContext {
 }
 
 interface AddEventDialogProps {
+  calendars: SunroofCalendar[];
   visible?: boolean;
   onClose: () => void;
-  onCreate: (event: SunroofEvent, context: AddEventCallbackContext) => void;
+  onCreate: (calendar: SunroofCalendar, event: SunroofEvent) => void;
 }
 
 export function AddEventDialog({
+  calendars,
   visible = false,
   onCreate = () => { },
   onClose = () => { },
@@ -28,9 +31,11 @@ export function AddEventDialog({
   const [modalRef, setModalRef] = useState<HTMLDivElement | null>();
   const [modal, setModal] = useState<Modal | undefined>(undefined);
 
+  const [calendarId, setCalendarId] = useState<string | undefined>(undefined);
+
   const [title, setTitle] = useState<string | undefined>(undefined);
-  const [start, setStart] = useState<Moment|null>(moment());
-  const [end, setEnd] = useState<Moment|null>(moment());
+  const [start, setStart] = useState<Moment | null>(moment());
+  const [end, setEnd] = useState<Moment | null>(moment());
   const [allDay, setAllDay] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState<string | undefined>(undefined);
@@ -75,17 +80,22 @@ export function AddEventDialog({
     setSuccessMessage(undefined);
     setErrorMessage(undefined);
 
-    const context: AddEventCallbackContext = {
-      success(message) {
-        setSuccessMessage(message);
-      },
-      error(message) {
-        setErrorMessage(message);
-      }
+    const calendar = calendars.find(c => c.id === calendarId);
+
+    if(!calendar) {
+      setErrorMessage('There was no calendar selected to add an event to.');
     }
 
-    onCreate(request, context);
-  }, [allDay, end, onCreate, start, title]);
+    createSunroofEvent(calendar!, request)
+      .then((response) => {
+        setSuccessMessage('The event was successfully created.');
+
+        onCreate(calendar!, response.data);
+      })
+      .catch(error => {
+        setErrorMessage(error.response.message)
+      });
+  }, [allDay, calendarId, calendars, end, onCreate, start, title]);
 
   const handleClose = useCallback(() => {
     modal?.hide();
@@ -106,6 +116,20 @@ export function AddEventDialog({
             </div>
             <div className="alert alert-warning" role="alert" hidden={!errorMessage}>
               {errorMessage}
+            </div>
+            <div className="mb-3">
+              <label htmlFor="calendar" className="form-label">
+                Calendar
+              </label>
+              <select
+                id="calendar"
+                className="form-select"
+                value={calendarId}
+                onChange={(e) => setCalendarId(e.target.value)}>
+                {
+                  calendars.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))
+                }
+              </select>
             </div>
             <div className="mb-3">
               <label htmlFor={titleId} className="form-label">Title</label>
