@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { SunroofCalendar, SunroofEvent } from "../model";
 import { AddCalendarDialog, type AddCalendarCallbackContext } from "../add-calendar/add-calendar";
-import { AddEventDialog } from "../add-event/add-event";
+import { AddEventDialog } from "../events/add-event";
 import { createSunroofCalendar, getSunroofCalendars } from "../api";
 import type { AxiosResponse } from "axios";
 
@@ -117,7 +117,7 @@ export function MainSidebar({
               onCalendarUnselected(c);
             }
           }
-          return (<CalendarControl calendar={c} onSelected={callback} />)
+          return (<CalendarControl key={c.id} calendar={c} onSelected={callback} />)
         })
       }
     </div>

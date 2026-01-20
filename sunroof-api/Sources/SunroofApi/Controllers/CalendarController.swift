@@ -11,6 +11,7 @@ struct CalendarController: RouteCollection {
             calendar.group("events") { events in
                 events.get(use: self.getEventsForCalendar)
                 events.post(use: self.addEventToCalendar)
+                events.post(":eventID", use: self.updateEventOnCalendar)
                 events.delete(":eventID", use: self.deleteEventFromCalendar)
             }
             
@@ -70,6 +71,23 @@ struct CalendarController: RouteCollection {
         
         let event = try req.content.decode(EventDTO.self).toModel(calendar: calendar)
         
+        try await event.save(on: req.db)
+        
+        return event.toDTO()
+    }
+    
+    @Sendable
+    func updateEventOnCalendar(req: Request) async throws -> EventDTO {
+        guard let calendar = try await Calendar.find(req.parameters.get("calendarID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        try req.content.decode(EventDTO.self).bindToModel(model: event, calendar: calendar)
+  
         try await event.save(on: req.db)
         
         return event.toDTO()

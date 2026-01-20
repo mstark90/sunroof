@@ -20,3 +20,7 @@ export function getSunroofEvents(calendar: SunroofCalendar): Promise<AxiosRespon
 export function createSunroofEvent(calendar: SunroofCalendar, event: SunroofEvent): Promise<AxiosResponse<SunroofEvent, unknown>> {
   return axios.post<SunroofEvent>(`${baseUrl}/calendars/${calendar.id}/events`, event);
 }
+
+export function updateSunroofEvent(calendar: SunroofCalendar, event: SunroofEvent): Promise<AxiosResponse<SunroofEvent, unknown>> {
+  return axios.post<SunroofEvent>(`${baseUrl}/calendars/${calendar.id}/events/${event.id}`, event);
+}

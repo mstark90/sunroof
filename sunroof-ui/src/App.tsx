@@ -11,12 +11,16 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 import { MainSidebar } from './components/main-sidebar';
+import { EditEventDialog, type EditEventDialogRef } from './events/edit-event';
+import type { EventClickArg } from '@fullcalendar/core/index.js';
 
 function App() {
 
   const eventCalendar = useRef<FullCalendar | null>(null);
 
   const calendars = useRef<SunroofCalendar[]>([]);
+
+  const editEventRef = useRef<EditEventDialogRef>(undefined);
 
   const [kioskMode, setKioskMode] = useState(false);
 
@@ -49,7 +53,47 @@ function App() {
       classNames: [],
       styles: [],
       extendedProps: {
+        calendar,
+        event
+      }
+    });
+  }, [eventCalendar]);
 
+  const updateEvent = useCallback((calendar: SunroofCalendar, event: SunroofEvent) => {
+    if (!eventCalendar.current) {
+      return;
+    }
+
+    const api = eventCalendar.current.getApi();
+
+    const calEvent = api.getEventById(event.id!);
+
+    if (!calEvent) {
+      return;
+    }
+
+    calEvent.remove();
+
+    const start = moment(event.start!);
+    const end = moment(event.end!);
+    api.addEvent({
+      id: event.id!,
+      start: start.toDate(),
+      end: end.toDate(),
+      title: event.title!,
+      allDay: event.allDay,
+      resourceIds: [],
+      display: "auto",
+      editable: false,
+      startEditable: false,
+      durationEditable: false,
+      color: calendar.backgroundColor,
+      textColor: calendar.textColor,
+      classNames: [],
+      styles: [],
+      extendedProps: {
+        calendar,
+        event
       }
     });
   }, [eventCalendar]);
@@ -105,6 +149,19 @@ function App() {
     eventLoader();
   }, [eventLoader]);
 
+  const eventClicked = useCallback((event: EventClickArg) => {
+    if(!editEventRef.current) {
+      return;
+    }
+
+    const {
+      extendedProps
+    } = event.event;
+    
+    editEventRef.current.loadEvent(extendedProps["calendar"], extendedProps["event"]);
+    editEventRef.current.toggle();
+  }, [])
+
   React.useEffect(() => {
 
     const intervalId = setInterval(eventLoader, 60 * 1000);
@@ -151,12 +208,14 @@ function App() {
               plugins={[dayGridPlugin, bootstrap5Plugin, timeGridPlugin]}
               themeSystem='bootstrap5'
               initialView="dayGridMonth"
+              eventClick={eventClicked}
               headerToolbar={{
                 left: 'prev,next',
                 center: 'title',
                 right: 'dayGridMonth,timeGridDay' // user can switch between the two
               }}
             />
+            <EditEventDialog ref={editEventRef} onUpdate={updateEvent} />
           </div>
         </div>
       </div>

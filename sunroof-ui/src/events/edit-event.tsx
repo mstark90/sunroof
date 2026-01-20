@@ -4,35 +4,37 @@ import type { SunroofCalendar, SunroofEvent } from "../model";
 import { DateTimePicker } from "@mui/x-date-pickers";
 import type { Moment } from "moment";
 import moment from "moment";
-import { createSunroofEvent } from "../api";
+import { updateSunroofEvent } from "../api";
 
 export interface AddEventCallbackContext {
   success: (message: string) => void;
   error: (message: string) => void;
 }
 
-interface AddEventDialogProps {
-  calendars: SunroofCalendar[];
-  visible?: boolean;
-  onClose: () => void;
-  onCreate: (calendar: SunroofCalendar, event: SunroofEvent) => void;
+interface EditEventDialogProps {
+  ref?: React.RefObject<EditEventDialogRef|undefined>;
+  onUpdate: (calendar: SunroofCalendar, event: SunroofEvent) => void;
 }
 
-export function AddEventDialog({
-  calendars,
-  visible = false,
-  onCreate = () => { },
-  onClose = () => { },
-}: AddEventDialogProps) {
+export interface EditEventDialogRef {
+  toggle(): void;
+  loadEvent(calendar: SunroofCalendar, event: SunroofEvent): void;
+}
+
+export function EditEventDialog({
+  ref,
+  onUpdate = () => { },
+}: EditEventDialogProps) {
   const id = useId();
   const titleId = useId();
   const allDayId = useId();
 
   const [modalRef, setModalRef] = useState<HTMLDivElement | null>();
   const [modal, setModal] = useState<Modal | undefined>(undefined);
+  const [visible, setVisible] = useState(false);
 
-  const [calendarId, setCalendarId] = useState<string | undefined>(undefined);
-
+  const [calendar, setCalendar] = useState<SunroofCalendar | undefined>(undefined);
+  const [eventId, setEventId] = useState<string | undefined>(undefined);
   const [title, setTitle] = useState<string | undefined>(undefined);
   const [start, setStart] = useState<Moment | null>(moment());
   const [end, setEnd] = useState<Moment | null>(moment());
@@ -62,15 +64,38 @@ export function AddEventDialog({
   }, [modalRef]);
 
   useEffect(() => {
+
     if (visible) {
       modal?.show();
     } else {
       modal?.hide();
     }
-  }, [visible, modal]);
+  }, [modal, visible]);
 
-  const beginAdd = useCallback(() => {
+  useEffect(() => {
+    if(!ref) {
+      return;
+    }
+
+    ref.current = {
+      toggle() {
+        setVisible(v => !v);
+      },
+      loadEvent(calendar, event) {
+        setCalendar(calendar);
+        setEventId(event.id);
+        setTitle(event.title);
+        setStart(moment(event.start));
+        setEnd(moment(event.end));
+        setAllDay(event.allDay ?? false);
+      },
+    }
+    
+  }, [ref])
+
+  const beginEdit = useCallback(() => {
     const request: SunroofEvent = {
+      id: eventId,
       title,
       start: start?.utc().toISOString(),
       end: end?.utc().toISOString(),
@@ -80,34 +105,27 @@ export function AddEventDialog({
     setSuccessMessage(undefined);
     setErrorMessage(undefined);
 
-    const calendar = calendars.find(c => c.id === calendarId);
-
-    if(!calendar) {
-      setErrorMessage('There was no calendar selected to add an event to.');
-    }
-
-    createSunroofEvent(calendar!, request)
+    updateSunroofEvent(calendar!, request)
       .then((response) => {
-        setSuccessMessage('The event was successfully created.');
+        setSuccessMessage('The event was successfully updated.');
 
-        onCreate(calendar!, response.data);
+        onUpdate(calendar!, response.data);
       })
       .catch(error => {
         setErrorMessage(error.response.message)
       });
-  }, [allDay, calendarId, calendars, end, onCreate, start, title]);
+  }, [allDay, calendar, end, eventId, onUpdate, start, title]);
 
   const handleClose = useCallback(() => {
-    modal?.hide();
-    onClose();
-  }, [modal, onClose]);
+    setVisible(false);
+  }, []);
 
   return (
     <div id={id} className="modal">
       <div className="modal-dialog">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">Add Calendar</h5>
+            <h5 className="modal-title">Edit Event</h5>
             <button type="button" className="btn-close" onClick={handleClose} aria-label="Close"></button>
           </div>
           <div className="modal-body">
@@ -121,15 +139,12 @@ export function AddEventDialog({
               <label htmlFor="calendar" className="form-label">
                 Calendar
               </label>
-              <select
+              <input
                 id="calendar"
-                className="form-select"
-                value={calendarId}
-                onChange={(e) => setCalendarId(e.target.value)}>
-                {
-                  calendars.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))
-                }
-              </select>
+                type="text"
+                className="form-control"
+                disabled
+                value={calendar?.name} />
             </div>
             <div className="mb-3">
               <label htmlFor={titleId} className="form-label">Title</label>
@@ -140,14 +155,14 @@ export function AddEventDialog({
                 <DateTimePicker
                   label="Start"
                   value={start}
-                  onChange={(newValue) => setStart(newValue)}
+                  onChange={(newValue) => setStart(moment(newValue))}
                 />
               </div>
               <div className="col-6">
                 <DateTimePicker
                   label="End"
                   value={end}
-                  onChange={(newValue) => setEnd(newValue)}
+                  onChange={(newValue) => setEnd(moment(newValue))}
                 />
               </div>
             </div>
@@ -160,7 +175,7 @@ export function AddEventDialog({
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={handleClose}>Close</button>
-            <button type="button" className="btn btn-primary" onClick={() => beginAdd()}>Add</button>
+            <button type="button" className="btn btn-primary" onClick={() => beginEdit()}>Update</button>
           </div>
         </div>
       </div>
